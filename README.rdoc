@@ -1,6 +1,6 @@
 == Example usage
 
-The awesome way:
+=== The awesome way:
 
   p = proxy_for "my string"
   p.revert => "gnirts ym"
@@ -12,7 +12,7 @@ The awesome way:
   p.odd? => before odd?
             true
   
-Other ways:
+=== Other ways:
 
 1º - Creates a proxy for the informed object
 
