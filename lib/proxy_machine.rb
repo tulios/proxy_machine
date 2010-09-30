@@ -5,5 +5,8 @@ module ProxyMachine
   end unless defined?(BasicObject)
   
 end
-
+                            
 require 'proxy_machine/proxy'
+include ProxyMachine
+
+require 'kernel'

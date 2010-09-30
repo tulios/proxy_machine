@@ -1,3 +1,4 @@
 require 'proxy_machine'
-require 'kernel'
 include ProxyMachine
+
+require 'kernel'
