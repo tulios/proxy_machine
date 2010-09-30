@@ -13,14 +13,18 @@ Gem::Specification.new do |s|
   s.description = %q{A cool proxy implementation pattern in ruby}
   s.email = %q{ornelas.tulio@gmail.com}
   s.extra_rdoc_files = [
-    "LICENSE"
+    "LICENSE",
+     "README.rdoc"
   ]
   s.files = [
     "LICENSE",
+     "README.rdoc",
      "Rakefile",
      "VERSION",
+     "init.rb",
      "lib/kernel.rb",
      "lib/proxy_machine.rb",
+     "lib/proxy_machine/proxy.rb",
      "proxy_machine.gemspec"
   ]
   s.homepage = %q{http://github.com/tulios/proxy_machine}
