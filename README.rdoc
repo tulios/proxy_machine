@@ -1,4 +1,18 @@
-Examples:
+== Example usage
+
+The awesome way:
+
+  p = proxy_for "my string"
+  p.revert => "gnirts ym"
+  
+  p = proxy_for 1, :before => {
+    :odd? => lambda {|obj| puts 'before odd?'}
+  }   
+  
+  p.odd? => before odd?
+            true
+  
+Other ways:
 
 1º - Creates a proxy for the informed object
 
@@ -9,7 +23,7 @@ Examples:
 
   p = Proxy.new [1,2,3], :before => {
     :size => lambda {|obj| puts "before: #{obj.inspect}"}
-    }
+  }
   
   p.size => before: [1, 2, 3]
             3
@@ -31,4 +45,3 @@ Examples:
                 }, :after => {
                   :size => lambda {|obj, result| puts "after: #{obj.inspect}: result => #{result}"}
                 }
-
