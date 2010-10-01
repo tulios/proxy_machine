@@ -7,6 +7,7 @@ begin
     gemspec.email = "ornelas.tulio@gmail.com"
     gemspec.homepage = "http://github.com/tulios/proxy_machine"
     gemspec.authors = ["Túlio Ornelas"]
+    gemspec.test_files = Dir.glob('spec/*_spec.rb')
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: gem install jeweler"

@@ -35,28 +35,56 @@ module ProxyMachine
     #
     def initialize object, callbacks = nil
       @object = object                    
-      @before = callbacks[:before] if callbacks
-      @after = callbacks[:after] if callbacks
+      @before = @before_all = @after = @after_all = nil
+      
+      if callbacks                  
+        @before = callbacks[:before]
+        @before_all = callbacks[:before_all]
+        @after = callbacks[:after]
+        @after_all = callbacks[:after_all]
+      end
     end
                             
-    def method_missing(symbol, *args)                               
+    def method_missing(symbol, *args)        
       method = symbol.to_s
       raise NoMethodError.new(method) unless @object.methods.member?(method)
-                                
-      execute_callback(@before, symbol, *args)
+                    
+      execute_call(@before_all, symbol)
+      execute_call(@before, symbol)
+
       result = @object.send(method, *args)
-      execute_callback(@after, symbol, result)
-      result
+
+      after_result = execute_call_with_result(@after, symbol, result)
+      result = after_result ? after_result : result
+      
+      after_all_result = execute_call_with_result(@after_all, symbol, result)
+      after_all_result ? after_all_result : result
     end
     
     def proxied_class?; true end
     
-    private
-    def execute_callback callback_container, method_symbol, *args
-      if callback_container
-        callback = callback_container[method_symbol]
-        callback.call(@object, *args) if callback and callback.class == Proc
+    private               
+    def execute_call container, method_symbol
+      if block = get_block(container, method_symbol) and proc?(block)
+        return @object = block.call(@object)
       end
+    end
+                      
+    def execute_call_with_result container, method_symbol, result
+      if block = get_block(container, method_symbol) and proc?(block)
+        return @object = block.call(@object, result)
+      end
+    end
+    
+    def get_block container, method_symbol
+      if container
+        return container if container.class == Proc
+        return container[method_symbol]
+      end
+    end
+                
+    def proc? block
+      block and block.class == Proc
     end
     
   end
