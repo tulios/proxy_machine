@@ -33,32 +33,33 @@ module ProxyMachine
     #                 :size => lambda {|obj, result| puts "after: #{obj.inspect}: result => #{result}"}
     #               }
     #
-    def initialize object, callbacks = nil
+    def initialize object, calls = nil
       @object = object                    
       @before = @before_all = @after = @after_all = nil
       
-      if callbacks                  
-        @before = callbacks[:before]
-        @before_all = callbacks[:before_all]
-        @after = callbacks[:after]
-        @after_all = callbacks[:after_all]
+      if calls                  
+        @before = calls[:before]
+        @before_all = calls[:before_all]
+        @after = calls[:after]
+        @after_all = calls[:after_all]
       end
     end
                             
     def method_missing(symbol, *args)        
       method = symbol.to_s
       raise NoMethodError.new(method) unless @object.methods.member?(method)
-                    
+                                       
       execute_call(@before_all, symbol)
       execute_call(@before, symbol)
 
       result = @object.send(method, *args)
 
-      after_result = execute_call_with_result(@after, symbol, result)
-      result = after_result ? after_result : result
-      
-      after_all_result = execute_call_with_result(@after_all, symbol, result)
-      after_all_result ? after_all_result : result
+      result_after = execute_call_with_result(@after, symbol, result)
+      result_after_all = execute_call_with_result(@after_all, symbol, result)
+         
+      return result_after_all if result_after_all
+      return result_after if result_after
+      result
     end
     
     def proxied_class?; true end
@@ -66,13 +67,13 @@ module ProxyMachine
     private               
     def execute_call container, method_symbol
       if block = get_block(container, method_symbol) and proc?(block)
-        return @object = block.call(@object)
+        block.call(@object)
       end
     end
                       
     def execute_call_with_result container, method_symbol, result
       if block = get_block(container, method_symbol) and proc?(block)
-        return @object = block.call(@object, result)
+        block.call(@object, result)
       end
     end
     
