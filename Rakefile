@@ -9,6 +9,7 @@ begin
     gemspec.authors = ["Túlio Ornelas"]
     gemspec.test_files = Dir.glob('spec/*_spec.rb')
   end
+  Jeweler::GemcutterTasks.new
 rescue LoadError
   puts "Jeweler not available. Install it with: gem install jeweler"
 end
