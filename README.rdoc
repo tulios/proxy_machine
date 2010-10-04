@@ -2,15 +2,15 @@
 
 === The awesome way:
 
-  p = proxy_for "my string"
-  p.revert => "gnirts ym"
+  p = proxy_for [1, 2, 3]
+  p.reverse => [3, 2, 1]
   
-  p = proxy_for 1, :before => {
-    :odd? => lambda {|obj| puts 'before odd?'}
+  p = proxy_for [1, 2, 3], :before => {
+    :reverse => lambda {|obj| puts 'before reverse'}
   }   
   
-  p.odd? => before odd?
-            true
+  p.reverse => before reverse
+               [3, 2, 1]
   
 === Other ways:
 
