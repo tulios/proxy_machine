@@ -1,3 +1,11 @@
+== Description
+  
+A cool proxy implementation pattern in ruby
+
+== Install
+
+  sudo gem install proxy_machine
+  
 == Example usage
 
 === The awesome way:
@@ -11,6 +19,17 @@
   
   p.reverse => before reverse
                [3, 2, 1]
+
+=== How to detect that the object is a proxy?
+
+  p = proxy_for [1, 2, 3] 
+  defined? p.proxied_class?
+
+=== Trying it in irb
+
+  irb
+  require 'proxy_machine'
+  proxy_for...
   
 === Other ways:
 
