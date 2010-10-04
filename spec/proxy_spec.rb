@@ -91,6 +91,29 @@ describe Proxy do
     
   end
   
+  context 'for kernel method' do
+    
+    it 'should call proxy' do
+      array = [1, 2, 3]
+      proxy = proxy_for array
+      proxy.should_not be_nil
+      proxy.class.should == array.class
+
+      proxy.reverse.should == array.reverse
+      proxy.proxied_class?.should be_true
+    end
+    
+    it 'should call proxy passing arguments' do
+      array = [1, 2, 3]
+      proxy = proxy_for array, :before => {
+        :reverse => lambda {|obj| obj << 50 }
+      }
+      proxy.should_not be_nil                  
+      proxy.reverse.should == [50, 3, 2, 1]
+    end
+    
+  end
+  
 end
 
 
