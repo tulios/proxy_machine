@@ -12,7 +12,11 @@ A cool proxy implementation pattern in ruby
 
   p = proxy_for [1, 2, 3]
   p.reverse => [3, 2, 1]
-  
+            
+=== Defining callbefores and callafters in method level
+                     
+Callbefores:
+
   p = proxy_for [1, 2, 3], :before => {
     :reverse => lambda {|obj| puts 'before reverse'}
   }   
@@ -20,6 +24,34 @@ A cool proxy implementation pattern in ruby
   p.reverse => before reverse
                [3, 2, 1]
 
+Callafters:
+               
+  p = proxy_for [1, 2, 3], :after => {
+   :reverse => lambda {|obj, result| result.sort}
+  }   
+
+  p.reverse => [1, 2, 3] # We reordered the list
+               
+=== Defining callbefores and callafters in all method calls
+
+Callbefores:
+
+  p = proxy_for [1, 2, 3], :before_all => lambda {|obj| puts 'before all'}
+  p.reverse => before all
+               [3, 2, 1]
+  
+  p.size => before all
+            3
+
+Callafters:
+               
+  p = proxy_for [1, 2, 3], :after_all => lambda {|obj, result| puts result}
+  p.reverse => [1, 2, 3]
+               [1, 2, 3] # puts
+               
+  p.size => 3
+            3 # puts
+                      
 === How to detect that the object is a proxy?
              
 The beautiful way
