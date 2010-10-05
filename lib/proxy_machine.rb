@@ -10,3 +10,4 @@ require 'proxy_machine/proxy'
 include ProxyMachine
 
 require 'kernel'
+require 'object'
