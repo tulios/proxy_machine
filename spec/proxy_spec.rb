@@ -12,6 +12,12 @@ describe Proxy do
     proxy.proxied_class?.should be_true
   end
   
+  it 'should detect a proxy object with proxied_class? method' do
+    array = [1, 2, 3]
+    proxy = Proxy.new array
+    (defined? proxy.proxied_class?).should_not be_nil
+  end
+  
   context 'for a certain method' do
   
     it 'should add a callbefore' do
@@ -110,6 +116,17 @@ describe Proxy do
       }
       proxy.should_not be_nil                  
       proxy.reverse.should == [50, 3, 2, 1]
+    end
+    
+  end
+   
+  context 'for object method' do
+    
+    it 'should detect proxied objects' do
+      array1 = [1, 2, 3]
+      array1.proxied?.should be_false
+      array2 = proxy_for [1, 2, 3]
+      array2.proxied?.should be_true
     end
     
   end
