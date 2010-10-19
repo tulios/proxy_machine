@@ -131,6 +131,36 @@ describe Proxy do
     
   end
   
+  context 'when registering a class' do
+    # Example of class
+    class SortPerformer
+      def initialize object, result = nil
+        @object = object; @result = result
+      end
+      
+      def call; @object.sort! end
+    end
+    
+    it 'should use a instance of the registered class for a callafter' do
+      array = [1, 2, 3]
+      proxy = proxy_for array, :after => {
+        :reverse => SortPerformer
+      }
+      proxy.should_not be_nil                  
+      proxy.reverse.should == [1, 2, 3]
+    end
+    
+    it 'should use a instance of the registered class for a callbefore' do
+      array = [3, 2, 1]
+      proxy = proxy_for array, :before => {
+        :reverse => SortPerformer
+      }
+      proxy.should_not be_nil                  
+      proxy.reverse.should == [3, 2, 1]
+    end
+    
+  end
+  
 end
 
 

@@ -51,6 +51,27 @@ Callafters:
                
   p.size => 3
             3 # puts
+
+=== Registering a class to perform the callafter or callbefore
+                       
+The constructor will receive the object, in case of a callback it will receive the result too.
+You need to have a 'call' method. The ProxyMachine will create a new instance of the class
+every time it need to use it.
+
+  # Example of class
+  class SortPerformer
+    def initialize object, result = nil
+      @object = object; @result = result
+    end
+                             
+    def call; @object.sort! end
+  end
+  
+  p = proxy_for [1, 2, 3], :after => {
+    :reverse => SortPerformer
+  }
+  
+  p.reverse => [1, 2, 3]
                       
 === How to detect that the object is a proxy?
              
