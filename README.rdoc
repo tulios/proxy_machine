@@ -1,3 +1,5 @@
+= proxy_machine
+
 == Description
   
 A cool proxy implementation pattern in ruby
@@ -35,8 +37,10 @@ Callafters:
 === Defining callbefores and callafters in all method calls
 
 Callbefores:
+This callback will receive a reference of the object, the symbol of the called method and the
+arguments passed.
 
-  p = proxy_for [1, 2, 3], :before_all => lambda {|obj| puts 'before all'}
+  p = proxy_for [1, 2, 3], :before_all => lambda {|obj, method, args| puts 'before all'}
   p.reverse => before all
                [3, 2, 1]
   
@@ -44,8 +48,10 @@ Callbefores:
             3
 
 Callafters:
+This callback will receive a reference of the object, the result of execution (this result could be nil), 
+the symbol of the called method and the arguments passed.
                
-  p = proxy_for [1, 2, 3], :after_all => lambda {|obj, result| puts result}
+  p = proxy_for [1, 2, 3], :after_all => lambda {|obj, result, method, args| puts result}
   p.reverse => [1, 2, 3]
                [1, 2, 3] # puts
                
@@ -56,11 +62,11 @@ Callafters:
                        
 The constructor will receive the object, in case of a callback it will receive the result too.
 You need to have a 'call' method. The ProxyMachine will create a new instance of the class
-every time it need to use it.
+every time it need to use it. You could use this feature with the before_all and after_all too.
 
   # Example of class
   class SortPerformer
-    def initialize object, result = nil
+    def initialize object, result = nil, method = nil, args = nil
       @object = object; @result = result
     end
                              
@@ -72,22 +78,62 @@ every time it need to use it.
   }
   
   p.reverse => [1, 2, 3]
-                      
-=== How to detect that the object is a proxy?
-             
-The beautiful way
   
+You could use this feature with before_all and after_all eather.  
+
+=== How to detect that the object is a proxy?
+
+The beautiful way:
+
   o1 = [1, 2, 3]
   o1.proxied? => false
-  
+
   o2 = proxy_for [1, 2, 3] 
   o2.proxied? => true
-  
-Other way
-  
+
+Other way:
+
   p = proxy_for [1, 2, 3]
   defined? p.proxied_class?
+                
+=== Getting access to the original object
+                                
+Call original_object method in the proxy object.
 
+  proxy = proxy_for [1, 2, 3]
+  proxy.proxied? => true
+  proxy.original_object.proxied? => false
+  
+=== Special options
+
+1 - allow_dinamic: Allow execute methods based on method missing, that do not exists actually.
+When allow_dinamic is enabled, proxy_machine will not check if this method really exists.
+Default is false.
+
+  # Example of class
+  class MyClass
+    attr_accessor :value
+    def method_missing(symbol, *args); 'nice!'; end
+  end
+  
+  p = proxy_for MyClass.new, :allow_dinamic => true, :before => {
+    :magic_method => lambda {|obj| obj.value = 'other value' }
+  }
+  
+  p.magic_method => 'other value'
+  
+2 - avoid_original_execution: When this option is enabled, proxy_machine will not call the original method.
+Default is false.
+  
+  p = proxy_for [3, 2, 1], 
+    :avoid_original_execution => true,
+    :before => {
+      :empty? => lambda {|obj| obj.sort!}
+    }
+    
+  p.empty? => nil
+  p.original_object => [1, 2, 3]
+                      
 === Trying it in irb
 
   irb
@@ -127,3 +173,7 @@ Other way
                 }, :after => {
                   :size => lambda {|obj, result| puts "after: #{obj.inspect}: result => #{result}"}
                 }
+
+== Copyright
+
+Copyright (c) 2010 Túlio Ornelas. See LICENSE for details.                
