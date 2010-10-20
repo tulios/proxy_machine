@@ -67,7 +67,7 @@ every time it need to use it. You could use this feature with the before_all and
   # Example of class
   class SortPerformer
     def initialize object, result = nil, method = nil, args = nil
-      @object = object; @result = result
+      @object = object; @result = result; @method = method, @args = args
     end
                              
     def call; @object.sort! end
@@ -79,8 +79,6 @@ every time it need to use it. You could use this feature with the before_all and
   
   p.reverse => [1, 2, 3]
   
-You could use this feature with before_all and after_all eather.  
-
 === How to detect that the object is a proxy?
 
 The beautiful way:
