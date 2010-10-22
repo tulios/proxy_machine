@@ -245,6 +245,165 @@ describe Proxy do
       proxy.original_object.value.should be_nil
     end
   end
+    
+  context 'filtering methods by regex' do
+    class MyRegexMethods                    
+      attr_accessor :value
+      def get_value1; @value ? @value : 'get' end
+      def get_value2; @value ? @value : 'get' end
+      def another_method; @value ? @value : 'another' end
+      def crazy_one; @value ? @value : 'crazy' end
+    end
+    
+    class Change1Performer
+      def initialize object, result = nil, method = nil, args = nil
+        @object = object; @result = result; @method = method, @args = args
+      end
+      
+      def call; @object.value = 'gotcha!' end
+    end
+    
+    class Change2Performer
+      def initialize object, result = nil, method = nil, args = nil
+        @object = object; @result = result; @method = method, @args = args
+      end
+      
+      def call; @object.value = "#{@object.value}works" end
+    end
+    
+    it 'should affect just the matched methods on callbefore' do
+      obj = MyRegexMethods.new
+      proxy = proxy_for obj, :before_all => {
+        :call1 => [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }],
+        :call2 => [/method$/, lambda {|obj, method, args| obj.value = 'another gotcha!' }]
+      }
+      
+      proxy.should_not be_nil
+      
+      proxy.original_object.value = nil
+      proxy.get_value1.should == 'gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.get_value2.should == 'gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.another_method.should == 'another gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.crazy_one.should == 'crazy'
+    end
+    
+    it 'should affect just the matched methods on callafter' do
+      obj = MyRegexMethods.new
+      proxy = proxy_for obj, :after_all => {
+        :call1 => [/^get_/, lambda {|obj, result, method, args| obj.value = 'gotcha!' }],
+        :call2 => [/method$/, lambda {|obj, result, method, args| obj.value = 'another gotcha!'}]
+      }
+      
+      proxy.should_not be_nil
+      
+      proxy.original_object.value = nil
+      proxy.get_value1.should == 'gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.get_value2.should == 'gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.another_method.should == 'another gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.crazy_one.should == 'crazy'
+    end
+    
+    it 'should execute the entire matched stack on callbefore sorted by the key name' do
+      obj = MyRegexMethods.new
+      proxy = proxy_for obj, :before_all => {
+        :call2 => [/value/, lambda {|obj, method, args| obj.value = "#{obj.value}works"}],
+        :call1 => [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
+      }
+      
+      proxy.should_not be_nil
+      
+      proxy.original_object.value = nil
+      proxy.get_value1.should == 'it_works'
+      
+      proxy.original_object.value = nil
+      proxy.get_value2.should == 'it_works'
+      
+      proxy.original_object.value = nil
+      proxy.another_method.should == 'another'
+      
+      proxy.original_object.value = nil
+      proxy.crazy_one.should == 'crazy'
+    end
+    
+    it 'should ensure that the last value returned is the value of the last called method' do
+      obj = MyRegexMethods.new
+      proxy = proxy_for obj, :after_all => {
+        :call2 => [/value/, lambda {|obj, result, method, args| 2}],
+        :call1 => [/get_/, lambda {|obj, result, method, args| 1}]
+      }
+      
+      proxy.should_not be_nil
+      
+      proxy.original_object.value = nil
+      proxy.get_value1.should == 2
+      
+      proxy.original_object.value = nil
+      proxy.get_value2.should == 2
+      
+      proxy.original_object.value = nil
+      proxy.another_method.should == 'another'
+      
+      proxy.original_object.value = nil
+      proxy.crazy_one.should == 'crazy'
+    end
+    
+    it 'should affect just the matched methods using a registered class' do
+      obj = MyRegexMethods.new
+      proxy = proxy_for obj, :before_all => {
+        :call1 => [/^get_/, Change1Performer],
+        :call2 => [/method$/, lambda {|obj, method, args| obj.value = 'another gotcha!' }]
+      }
+      
+      proxy.should_not be_nil
+      
+      proxy.original_object.value = nil
+      proxy.get_value1.should == 'gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.get_value2.should == 'gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.another_method.should == 'another gotcha!'
+      
+      proxy.original_object.value = nil
+      proxy.crazy_one.should == 'crazy'
+    end
+    
+    it 'should execute the entire matched stack sorted by the key name using a registered class' do
+      obj = MyRegexMethods.new
+      proxy = proxy_for obj, :before_all => {
+        :call2 => [/value/, Change2Performer],
+        :call1 => [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
+      }
+      
+      proxy.should_not be_nil
+      
+      proxy.original_object.value = nil
+      proxy.get_value1.should == 'it_works'
+      
+      proxy.original_object.value = nil
+      proxy.get_value2.should == 'it_works'
+      
+      proxy.original_object.value = nil
+      proxy.another_method.should == 'another'
+      
+      proxy.original_object.value = nil
+      proxy.crazy_one.should == 'crazy'
+    end
+    
+  end
   
 end
 
