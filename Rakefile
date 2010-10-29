@@ -8,7 +8,8 @@ begin
     gemspec.homepage = "http://github.com/tulios/proxy_machine"
     gemspec.authors = ["Túlio Ornelas"]
     gemspec.test_files = Dir.glob('spec/*_spec.rb')
-    gemspec.add_development_dependency "rspec", ">= 1.2.9"
+    gemspec.add_development_dependency "rspec", ">= 2.0.1"
+    gemspec.add_development_dependency "rspec-core", ">= 2.0.1"
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError

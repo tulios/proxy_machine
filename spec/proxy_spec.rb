@@ -23,7 +23,7 @@ describe Proxy do
     it 'should add a callbefore' do
       array = [1, 2, 3]
       proxy = Proxy.new array, :before => {
-        :reverse => lambda {|obj| obj << 50 }
+        :reverse => lambda {|obj, args| obj << 50}
       }
       proxy.should_not be_nil                  
       proxy.reverse.should == [50, 3, 2, 1]
@@ -32,7 +32,7 @@ describe Proxy do
     it 'should add a callafter' do
       array = [1, 2, 3]
       proxy = Proxy.new array, :after => {
-        :reverse => lambda {|obj, result| result.collect {|e| e*4} }
+        :reverse => lambda {|obj, result, args| result.collect {|e| e*4} }
       }
       proxy.should_not be_nil                  
       proxy.reverse.should == [12, 8, 4]
@@ -42,10 +42,10 @@ describe Proxy do
       array = [1, 2, 3]
       proxy = Proxy.new array, 
       :before => {
-        :reverse => lambda {|obj| obj.map! {|e| e*2} }
+        :reverse => lambda {|obj, args| obj.map! {|e| e*2} }
       },
       :after => {
-        :reverse => lambda {|obj, result| result.collect {|e| e/2} }
+        :reverse => lambda {|obj, result, args| result.collect {|e| e/2} }
       }
       proxy.should_not be_nil                  
       proxy.reverse.should == [3, 2, 1]
@@ -143,7 +143,7 @@ describe Proxy do
     it 'should call proxy passing arguments' do
       array = [1, 2, 3]
       proxy = proxy_for array, :before => {
-        :reverse => lambda {|obj| obj << 50 }
+        :reverse => lambda {|obj, args| obj << 50 }
       }
       proxy.should_not be_nil                  
       proxy.reverse.should == [50, 3, 2, 1]
@@ -219,7 +219,7 @@ describe Proxy do
       obj.value = "Crazy Value"
       
       proxy = proxy_for obj, :allow_dinamic => true, :before => {
-        :crazy_method => lambda {|obj| obj.value = "proxied value!" }
+        :crazy_method => lambda {|obj, args| obj.value = "proxied value!" }
       }
                     
       proxy.should_not be_nil                  
@@ -273,10 +273,10 @@ describe Proxy do
     
     it 'should affect just the matched methods on callbefore' do
       obj = MyRegexMethods.new
-      proxy = proxy_for obj, :before_all => {
-        :call1 => [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }],
-        :call2 => [/method$/, lambda {|obj, method, args| obj.value = 'another gotcha!' }]
-      }
+      proxy = proxy_for obj, :before_all => [
+        [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }],
+        [/method$/, lambda {|obj, method, args| obj.value = 'another gotcha!' }]
+      ]
       
       proxy.should_not be_nil
       
@@ -295,10 +295,10 @@ describe Proxy do
     
     it 'should affect just the matched methods on callafter' do
       obj = MyRegexMethods.new
-      proxy = proxy_for obj, :after_all => {
-        :call1 => [/^get_/, lambda {|obj, result, method, args| obj.value = 'gotcha!' }],
-        :call2 => [/method$/, lambda {|obj, result, method, args| obj.value = 'another gotcha!'}]
-      }
+      proxy = proxy_for obj, :after_all => [
+        [/^get_/, lambda {|obj, result, method, args| obj.value = 'gotcha!' }],
+        [/method$/, lambda {|obj, result, method, args| obj.value = 'another gotcha!'}]
+      ]
       
       proxy.should_not be_nil
       
@@ -315,34 +315,12 @@ describe Proxy do
       proxy.crazy_one.should == 'crazy'
     end
     
-    it 'should execute the entire matched stack on callbefore sorted by the key name' do
-      obj = MyRegexMethods.new
-      proxy = proxy_for obj, :before_all => {
-        :call2 => [/value/, lambda {|obj, method, args| obj.value = "#{obj.value}works"}],
-        :call1 => [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
-      }
-      
-      proxy.should_not be_nil
-      
-      proxy.original_object.value = nil
-      proxy.get_value1.should == 'it_works'
-      
-      proxy.original_object.value = nil
-      proxy.get_value2.should == 'it_works'
-      
-      proxy.original_object.value = nil
-      proxy.another_method.should == 'another'
-      
-      proxy.original_object.value = nil
-      proxy.crazy_one.should == 'crazy'
-    end
-    
     it 'should ensure that the last value returned is the value of the last called method' do
       obj = MyRegexMethods.new
-      proxy = proxy_for obj, :after_all => {
-        :call2 => [/value/, lambda {|obj, result, method, args| 2}],
-        :call1 => [/get_/, lambda {|obj, result, method, args| 1}]
-      }
+      proxy = proxy_for obj, :after_all => [
+        [/get_/, lambda {|obj, result, method, args| 1}],
+        [/value/, lambda {|obj, result, method, args| 2}]
+      ]
       
       proxy.should_not be_nil
       
@@ -361,10 +339,10 @@ describe Proxy do
     
     it 'should affect just the matched methods using a registered class' do
       obj = MyRegexMethods.new
-      proxy = proxy_for obj, :before_all => {
-        :call1 => [/^get_/, Change1Performer],
-        :call2 => [/method$/, lambda {|obj, method, args| obj.value = 'another gotcha!' }]
-      }
+      proxy = proxy_for obj, :before_all => [
+        [/^get_/, Change1Performer],
+        [/method$/, lambda {|obj, method, args| obj.value = 'another gotcha!' }]
+      ]
       
       proxy.should_not be_nil
       
@@ -383,10 +361,10 @@ describe Proxy do
     
     it 'should execute the entire matched stack sorted by the key name using a registered class' do
       obj = MyRegexMethods.new
-      proxy = proxy_for obj, :before_all => {
-        :call2 => [/value/, Change2Performer],
-        :call1 => [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
-      }
+      proxy = proxy_for obj, :before_all => [
+        [/get_/, lambda {|obj, method, args| obj.value = "it_"}],
+        [/value/, Change2Performer]
+      ]
       
       proxy.should_not be_nil
       
@@ -404,7 +382,40 @@ describe Proxy do
     end
     
   end
-  
+
+  context 'creating an execution stack' do
+    class StackClass
+      attr_accessor :name
+      def do_logic var
+        @name = "#{@name}_#{var}"
+      end
+    end
+
+    it 'should execute the entire stack over a single proxied method' do
+      obj = StackClass.new
+      obj.name = "important name"
+                   
+      make_upper = lambda {|obj, args| obj.name = obj.name.upcase }
+      make_without_space = lambda {|obj, args| obj.name = obj.name.gsub /\s+/, '-'}
+      make_round_brackets = lambda {|obj, args| obj.name = "(#{obj.name})" }
+
+      make_lower = lambda {|obj, args| args[0].downcase! }
+      make_round_brackets2 = lambda {|obj, args| args[0] = "[#{args[0]}]" }
+      
+      proxy = proxy_for obj, :before => {
+        :name => [make_upper, make_without_space, make_round_brackets],
+        :do_logic => [make_lower, make_round_brackets2]
+      }                    
+                                                                     
+      proxy.should_not be_nil
+      proxy.name.should == "(IMPORTANT-NAME)"
+      
+      proxy.do_logic "MY NAME"
+      proxy.original_object.name.should == "(IMPORTANT-NAME)_[my name]"
+    end
+
+  end
+
 end
 
 

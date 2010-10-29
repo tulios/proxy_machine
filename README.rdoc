@@ -20,7 +20,7 @@ A cool proxy implementation pattern in ruby
 Callbefores:
 
   p = proxy_for [1, 2, 3], :before => {
-    :reverse => lambda {|obj| puts 'before reverse'}
+    :reverse => lambda {|obj, args| puts 'before reverse'}
   }   
   
   p.reverse => before reverse
@@ -29,16 +29,18 @@ Callbefores:
 Callafters:
                
   p = proxy_for [1, 2, 3], :after => {
-   :reverse => lambda {|obj, result| result.sort}
+   :reverse => lambda {|obj, result, args| result.sort}
   }   
 
   p.reverse => [1, 2, 3] # We reordered the list
+                  
+You will always receive the arguments passed to the original method.               
                
-=== Defining callbefores and callafters in all method calls
+=== Defining callbefores and callafters for all method calls
 
 Callbefores:
 This callback will receive a reference of the object, the symbol of the called method and the
-arguments passed.
+original arguments passed.
 
   p = proxy_for [1, 2, 3], :before_all => lambda {|obj, method, args| puts 'before all'}
   p.reverse => before all
@@ -81,7 +83,7 @@ every time it need to use it. You could use this feature with the before_all and
 
 === Controlling the method execution with regexp
                        
-For before_all and after_all you could use regexp to configure whicth methods will be affected.
+For before_all and after_all you could use regexp to configure which methods will be affected.
   
   # Example of class
   class MyRegexMethods                    
@@ -92,21 +94,21 @@ For before_all and after_all you could use regexp to configure whicth methods wi
     def crazy_one; @value ? @value : 'crazy' end
   end
    
-  p = proxy_for MyRegexMethods.new, :before_all => {
-    :call1 => [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }],
-  }
+  p = proxy_for MyRegexMethods.new, :before_all => [
+    [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }]
+  ]
   
   p.get_value1 => gotcha!
   p.get_value2 => gotcha!
   p.another_method => 'another
   proxy.crazy_one => 'crazy'
 
-You could use many definitions if you want, the calls will happen in alphabetical order of the keys.  
+You could use many definitions if you want, the calls will happen in the declared order.
 
-  p = proxy_for MyRegexMethods.new, :before_all => {
-    :call2 => [/value/, lambda {|obj, method, args| obj.value = "#{obj.value}works"}],
-    :call1 => [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
-  }
+  p = proxy_for MyRegexMethods.new, :before_all => [
+    [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
+    [/value/, lambda {|obj, method, args| obj.value = "#{obj.value}works"}]
+  ]
   
   p.get_value1 => it_works
   p.get_value2 => it_works
@@ -124,16 +126,54 @@ It is also possible to use classes instead of procs.
     def call; @object.value = "#{@object.value}works" end
   end
   
-  p = proxy_for MyRegexMethods.new, :before_all => {
-    :call2 => [/value/, Change2Performer],
-    :call1 => [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
-  }
+  p = proxy_for MyRegexMethods.new, :before_all => [
+    [/get_/, lambda {|obj, method, args| obj.value = "it_"}],
+    [/value/, Change2Performer]
+  ]
   
   p.get_value1 => it_works
   p.get_value2 => it_works
   p.another_method => another
   p.crazy_one => crazy
+
+You could use this feature to build an execution stack.
+
+=== Building an execution stack
+
+  # Example of class
+  class StackClass
+    attr_accessor :name, :company_name
+  end               
   
+  # Performers
+  make_upper = lambda {|obj, args| obj.name = obj.name.upcase }
+  make_without_space = lambda {|obj, args| obj.name = obj.name.gsub /\s+/, '-'}
+  make_round_brackets = lambda {|obj, args| obj.name = "(#{obj.name})" }
+  
+  make_lower = lambda {|obj, args| obj.company_name = obj.company_name.downcase }
+  make_round_brackets2 = lambda {|obj, args| obj.company_name = "[#{obj.company_name}]" }
+  
+Method level:
+  obj = StackClass.new
+  obj.name = "important name"
+  
+  p = proxy_for obj, :before => {
+    :name => [make_upper, make_without_space, make_round_brackets]
+  }
+                   
+  p.name => (IMPORTANT-NAME)                 
+
+For all methods:
+  obj = StackClass.new
+  obj.name = "important name"
+  obj.company_name = "COMPANY NAME"
+  
+  p = proxy_for obj, :before => {
+    :company_name => [make_lower, make_round_brackets2]
+  }
+                   
+  p.company_name => company name                 
+                   
 === How to detect that the object is a proxy?
 
 The beautiful way:
