@@ -161,7 +161,7 @@ It is also possible to use classes instead of procs.
   }
                    
   p.name => (IMPORTANT-NAME)                 
-  p.company_name => company name                 
+  p.company_name => [company name]                 
                    
 === How to detect that the object is a proxy?
 
