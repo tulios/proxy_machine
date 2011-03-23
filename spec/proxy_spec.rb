@@ -1,6 +1,6 @@
-require 'proxy_machine'
+require 'spec_helper'
 
-describe Proxy do
+describe "proxy_machine" do
                              
   it 'should create a proxy object from the given one' do
     array = [1, 2, 3]
@@ -128,7 +128,7 @@ describe Proxy do
     
   end
   
-  context 'for kernel method' do
+  context 'for kernel method proxy_for' do
     
     it 'should call proxy' do
       array = [1, 2, 3]
@@ -414,6 +414,76 @@ describe Proxy do
       proxy.original_object.name.should == "(IMPORTANT-NAME)_[my name]"
     end
 
+  end
+  
+  context 'for kernel method auto_proxy' do
+    class ProxiedConstructor1
+      attr_accessor :name
+      auto_proxy { before :name => lambda {|obj, args| obj.name = "#{obj.name}-2"} }
+    end
+    class ProxiedConstructor2
+      attr_accessor :name
+      auto_proxy { after :name => lambda {|obj, result, args| result.chars.to_a.sort.to_s} }
+    end
+    class ProxiedConstructor3
+      attr_accessor :count
+      def initialize; @count = 0 end
+      auto_proxy { before_all {|obj, method, args| obj.count+=1} }
+    end
+    class ProxiedConstructor4
+      attr_accessor :count
+      def initialize; @count = 0 end
+      auto_proxy { after_all {|obj, method, args| obj.count-=1} }
+    end
+    
+    context 'when generate a object already proxied' do
+      
+      context 'for a certain method' do
+        
+        it 'should add a callbefore' do
+          obj = ProxiedConstructor1.new
+          obj.proxied?.should be_true
+          obj.name.should eql("-2")
+          obj.name = "house"
+          obj.name.should eql("house-2")
+        end
+      
+        it 'should add a callafter' do
+          obj = ProxiedConstructor2.new
+          obj.proxied?.should be_true
+          obj.name = "tulio"
+          obj.name.should eql("ilotu")
+          obj.name = "proxy"
+          obj.name.should eql("oprxy")
+        end
+        
+      end
+      
+      context 'for all methods' do
+        
+        it 'should add a callbefore' do
+          obj = ProxiedConstructor3.new
+          obj.proxied?.should be_true
+          obj.count.should eql(1)
+          obj.to_s
+          obj.count.should eql(3)
+          obj.display
+          obj.count.should eql(5)
+        end
+        
+        it 'should add a callafter' do
+          obj = ProxiedConstructor4.new
+          obj.proxied?.should be_true
+          obj.count.should eql(-1)
+          obj.to_s
+          obj.count.should eql(-3)
+          obj.display
+          obj.count.should eql(-5)
+        end
+        
+      end
+      
+    end
   end
 
 end

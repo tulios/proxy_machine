@@ -10,4 +10,5 @@ require 'kernel'
 require 'object'
 require 'symbol'                            
 require 'proxy_machine/proxy'
+require 'proxy_machine/config'
 include ProxyMachine
