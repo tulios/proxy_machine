@@ -10,20 +10,28 @@ module ProxyMachine
       instance_exec(&block)
     end
     
+    def allow_dinamic boolean
+      @callbacks[:allow_dinamic] = boolean
+    end
+    
+    def avoid_original_execution boolean
+      @callbacks[:avoid_original_execution] = boolean
+    end
+    
     def before hash
       @callbacks[:before] = hash
     end
     
-    def before_all &block
-      @callbacks[:before_all] = block
+    def before_all params = nil, &block
+      @callbacks[:before_all] = params ? params : block
     end
     
     def after hash
       @callbacks[:after] = hash
     end
     
-    def after_all &block
-      @callbacks[:after_all] = block
+    def after_all params = nil, &block
+      @callbacks[:after_all] = params ? params : block
     end
     
   end

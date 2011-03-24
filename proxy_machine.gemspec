@@ -31,7 +31,8 @@ Gem::Specification.new do |s|
      "lib/symbol.rb",
      "proxy_machine.gemspec",
      "script/console",
-     "spec/proxy_spec.rb"
+     "spec/proxy_spec.rb",
+     "spec/spec_helper.rb"
   ]
   s.homepage = %q{http://github.com/tulios/proxy_machine}
   s.rdoc_options = ["--charset=UTF-8"]
