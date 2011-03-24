@@ -1,8 +1,10 @@
 = proxy_machine
 
-== Description
-  
 A cool proxy implementation pattern in ruby
+
+== Details
+  
+Proxy Machine is a proxy/delegate framework. It can create a proxy for  standalone objects or change the behavior of the entire class, also it is possible to create an execution stack with the proxy life cycle.
 
 == Install
 
@@ -10,29 +12,74 @@ A cool proxy implementation pattern in ruby
   
 == Example usage
 
-=== The awesome way:
+=== Proxy standalone objects
 
   p = proxy_for [1, 2, 3]
-  p.reverse => [3, 2, 1]
+  p.proxied? # => true
+  p.reverse # => [3, 2, 1]
+
+=== Proxy the entire class
+
+  class MyClass
+    attr_accessor :name
+    
+    # Configuring the proxy
+    auto_proxy do
+      before :name => lambda {|obj, args| puts "old name: #{obj.name}"}
+    end
+    
+  end
+  
+  obj = MyClass.new
+  obj.proxied? # => true
+  obj.name # => old name: nil
+                nil
             
 === Defining callbefores and callafters in method level
                      
 Callbefores:
 
+==== Standalone way
   p = proxy_for [1, 2, 3], :before => {
     :reverse => lambda {|obj, args| puts 'before reverse'}
   }   
   
-  p.reverse => before reverse
-               [3, 2, 1]
+  p.reverse # => before reverse
+                 [3, 2, 1]
+
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      before :method => lambda {|obj, args| puts 'implementation'}
+    end
+    # ...
+  end
+  
+  obj = MyClass.new
+  obj.proxied? # => true
+  
+Every instance of "MyClass" will be proxied
 
 Callafters:
-               
+
+==== Standalone way               
   p = proxy_for [1, 2, 3], :after => {
    :reverse => lambda {|obj, result, args| result.sort}
   }   
 
-  p.reverse => [1, 2, 3] # We reordered the list
+  p.reverse # => [1, 2, 3] # We reordered the list
+  
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      after :method => lambda {|obj, result, args| puts 'implementation'}
+    end
+    # ...
+  end
                   
 You will always receive the arguments passed to the original method.               
                
@@ -42,23 +89,47 @@ Callbefores:
 This callback will receive a reference of the object, the symbol of the called method and the
 original arguments passed.
 
-  p = proxy_for [1, 2, 3], :before_all => lambda {|obj, method, args| puts 'before all'}
-  p.reverse => before all
-               [3, 2, 1]
-  
-  p.size => before all
-            3
+==== Standalone way
 
+  p = proxy_for [1, 2, 3], :before_all => lambda {|obj, method, args| puts 'before all'}
+  p.reverse # => before all
+                 [3, 2, 1]
+  
+  p.size # => before all
+              3
+
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      before_all {|obj, method, args| puts 'implementation'}
+    end
+    # ...
+  end
+  
 Callafters:
 This callback will receive a reference of the object, the result of execution (this result could be nil), 
 the symbol of the called method and the arguments passed.
+
+==== Standalone way
                
   p = proxy_for [1, 2, 3], :after_all => lambda {|obj, result, method, args| puts result}
-  p.reverse => [1, 2, 3]
-               [1, 2, 3] # puts
+  p.reverse # => [1, 2, 3]
+                 [1, 2, 3] # puts
                
-  p.size => 3
-            3 # puts
+  p.size # => 3
+              3 # puts
+              
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      after_all {|obj, result, method, args| puts 'implementation'}
+    end
+    # ...
+  end
 
 === Registering a class to perform the callafter or callbefore
                        
@@ -74,12 +145,24 @@ every time it need to use it. You could use this feature with the before_all and
                              
     def call; @object.sort! end
   end
+
+==== Standalone way
   
   p = proxy_for [1, 2, 3], :after => {
     :reverse => SortPerformer
   }
   
-  p.reverse => [1, 2, 3]
+  p.reverse # => [1, 2, 3]
+  
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      after :method => Performer
+    end
+    # ...
+  end
 
 === Controlling the method execution with regexp
                        
@@ -93,27 +176,56 @@ For before_all and after_all you could use regexp to configure which methods wil
     def another_method; @value ? @value : 'another' end
     def crazy_one; @value ? @value : 'crazy' end
   end
+
+==== Standalone way
    
   p = proxy_for MyRegexMethods.new, :before_all => [
     [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }]
   ]
   
-  p.get_value1 => gotcha!
-  p.get_value2 => gotcha!
-  p.another_method => 'another
-  proxy.crazy_one => 'crazy'
+  p.get_value1 # => gotcha!
+  p.get_value2 # => gotcha!
+  p.another_method # => 'another
+  proxy.crazy_one # => 'crazy'
+  
+==== Class way
+
+  class MyRegexMethods
+    # ...
+    auto_proxy do
+      before_all [
+        [/^get_/, lambda {|obj, method, args| obj.value = 'gotcha!' }]
+      ]
+    end
+    # ...
+  end
 
 You could use many definitions if you want, the calls will happen in the declared order.
+
+==== Standalone way
 
   p = proxy_for MyRegexMethods.new, :before_all => [
     [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
     [/value/, lambda {|obj, method, args| obj.value = "#{obj.value}works"}]
   ]
   
-  p.get_value1 => it_works
-  p.get_value2 => it_works
-  p.another_method => another
-  p.crazy_one => crazy
+  p.get_value1 # => it_works
+  p.get_value2 # => it_works
+  p.another_method # => another
+  p.crazy_one # => crazy
+
+==== Class way
+
+  class MyRegexMethods
+    # ...
+    auto_proxy do
+      before_all [
+        [/get_/, lambda {|obj, method, args| obj.value = "it_"}]
+        [/value/, lambda {|obj, method, args| obj.value = "#{obj.value}works"}]
+      ]
+    end
+    # ...
+  end
 
 It is also possible to use classes instead of procs.
             
@@ -131,10 +243,10 @@ It is also possible to use classes instead of procs.
     [/value/, Change2Performer]
   ]
   
-  p.get_value1 => it_works
-  p.get_value2 => it_works
-  p.another_method => another
-  p.crazy_one => crazy
+  p.get_value1 # => it_works
+  p.get_value2 # => it_works
+  p.another_method # => another
+  p.crazy_one # => crazy
 
 === Building an execution stack
 
@@ -160,18 +272,20 @@ It is also possible to use classes instead of procs.
     :company_name => [make_lower, make_round_brackets2]
   }
                    
-  p.name => (IMPORTANT-NAME)                 
-  p.company_name => [company name]                 
+  p.name # => (IMPORTANT-NAME)                 
+  p.company_name # => [company name]                 
                    
 === How to detect that the object is a proxy?
 
 The beautiful way:
 
   o1 = [1, 2, 3]
-  o1.proxied? => false
+  o1.proxied? # => false
 
   o2 = proxy_for [1, 2, 3] 
-  o2.proxied? => true
+  o2.proxied? # => true
+  
+It will work with +auto_proxy+ usage too.
 
 Other way:
 
@@ -183,8 +297,10 @@ Other way:
 Call original_object method in the proxy object.
 
   proxy = proxy_for [1, 2, 3]
-  proxy.proxied? => true
-  proxy.original_object.proxied? => false
+  proxy.proxied? # => true
+  proxy.original_object.proxied? # => false
+  
+It will work with +auto_proxy+ usage too.
   
 === Special options
 
@@ -197,15 +313,30 @@ Default is false.
     attr_accessor :value
     def method_missing(symbol, *args); 'nice!'; end
   end
+
+==== Standalone way
   
   p = proxy_for MyClass.new, :allow_dinamic => true, :before => {
     :magic_method => lambda {|obj| obj.value = 'other value' }
   }
   
-  p.magic_method => 'other value'
+  p.magic_method # => 'other value'
+
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      allow_dinamic true
+      before :magic_method => lambda {|obj| obj.value = 'other value' }
+    end
+    # ...
+  end
   
 2 - avoid_original_execution: When this option is enabled, proxy_machine will not call the original method.
 Default is false.
+
+==== Standalone way
   
   p = proxy_for [3, 2, 1], 
     :avoid_original_execution => true,
@@ -213,21 +344,39 @@ Default is false.
       :empty? => lambda {|obj| obj.sort!}
     }
     
-  p.empty? => nil
-  p.original_object => [1, 2, 3]
+  p.empty? # => nil
+  p.original_object # => [1, 2, 3]
+
+==== Class way
+
+  class MyClass
+    # ...
+    auto_proxy do
+      avoid_original_execution true
+    end
+    # ...
+  end
                       
 === Trying it in irb
 
   irb
   require 'proxy_machine'
+  
   proxy_for...
+  
+  class XYZ
+    auto_proxy do
+      ...
+    end
+    ...
+  end
   
 === Other ways:
 
 1º - Creates a proxy for the informed object
 
   p = Proxy.new [1,2,3]
-  p.size => 3
+  p.size # => 3
 
 2º - A proxy with a before callback.
 
@@ -235,8 +384,8 @@ Default is false.
     :size => lambda {|obj| puts "before: #{obj.inspect}"}
   }
   
-  p.size => before: [1, 2, 3]
-            3
+  p.size # => before: [1, 2, 3]
+              3
                   
 3º - A proxy with a after callback
 
@@ -244,8 +393,8 @@ Default is false.
     :size => lambda {|obj, result| puts "after: #{obj.inspect}: result => #{result}"}
   }
 
-  p.size => after: [1, 2, 3]: result => 3
-            3
+  p.size # => after: [1, 2, 3]: result => 3
+              3
                  
 4º - Both
 
@@ -258,4 +407,4 @@ Default is false.
 
 == Copyright
 
-Copyright (c) 2010 Túlio Ornelas. See LICENSE for details.                
+Copyright (c) 2010, 2011 Túlio Ornelas. See LICENSE for details.                
